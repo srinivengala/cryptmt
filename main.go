@@ -86,6 +86,43 @@ func initByArray(c *ctx, initKey []uint32, keyLength int) {
 	c.MT[0] = uint32(0x80000000) /* MSB is 1; assuring non-zero initial array */
 }
 
+var mag01 = [2]uint32{uint32(0x0), matrixA}
+
+/* generates whole array of random numbers in [0,0xffffffff]-interval */
+func genrandWholeArray(c *ctx) {
+	var y uint32
+
+	/* mag01[x] = x * MATRIX_A  for x=0,1 */
+
+	var kk int
+
+	for kk = 0; kk < n-m; kk++ {
+		y = (c.MT[kk] & upperMask) | (c.MT[kk+1] & lowerMask)
+		c.MT[kk] = c.MT[kk+m] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
+	}
+	for ; kk < n-1; kk++ {
+		y = (c.MT[kk] & upperMask) | (c.MT[kk+1] & lowerMask)
+		c.MT[kk] = c.MT[kk+(m-n)] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
+	}
+	y = (c.MT[n-1] & upperMask) | (c.MT[0] & lowerMask)
+	c.MT[n-1] = c.MT[m-1] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
+
+	c.Mti = 0
+	return
+}
+
+/* generate 32-bit random integer */
+func genrandInt32(c *ctx) uint32 {
+	if c.Mti >= n {
+		genrandWholeArray(c)
+	}
+
+	//no tampering
+	ret := c.MT[c.Mti]
+	c.Mti++
+	return ret
+}
+
 func main() {
 
 }
