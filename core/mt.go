@@ -37,12 +37,16 @@ type Ctx struct {
 // CryptMT v1.0 Implementation
 // By Hagita-Matsumoto-Nishimura-Saito
 
-// Period parameters
+// MT has period 2^19937-1 and uniform equidistribution property upto 623 dimension.
 
-// N is period parameter
+// Period parameters :
+
+// N is GF(2) linear generator's state size in words (624*32 = 19968 bits ~= 19937+32). 32 bits discarded.
+// N is max dimensions MT has equidistribution or in other words
+// N is period parameter for MT's state size in words(32bits)
 const N = 624
 
-// M is period parameter
+// M is period parameter represents the starting word of GF(2) in MT's state
 const M = 397
 const matrixA uint32 = 0x9908B0DF   // constant vector a
 const upperMask uint32 = 0x80000000 // most significant w-r bits
