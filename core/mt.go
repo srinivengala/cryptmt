@@ -5,16 +5,16 @@ package core
 /* MT included */
 /* 2005/04/16 */
 
-// CmtMaxKeySize is max key size supported by this cipher
-const CmtMaxKeySize = 2048
+// MaxKeySize is max key size supported by this cipher
+const MaxKeySize = 2048
 
 // CmtKeySize to iterate through key sizes
 func CmtKeySize(i int) int {
 	return 128 + i*32
 }
 
-// CmtMaxIVSize is max IV size supported
-const CmtMaxIVSize = 2048
+// MaxIVSize is max IV size supported
+const MaxIVSize = 2048
 
 func cmtIVSize(i int) int {
 	return 128 + i*32
@@ -24,8 +24,8 @@ func cmtIVSize(i int) int {
 type Ctx struct {
 	Keysize uint32 // size in bits
 	IVSize  uint32 // size in bits
-	Key     [CmtMaxKeySize / 8]uint8
-	IV      [CmtMaxIVSize / 8]uint8
+	Key     [MaxKeySize / 8]uint8
+	IV      [MaxIVSize / 8]uint8
 
 	MT    [624]uint32
 	Mti   int
@@ -55,17 +55,17 @@ func initGenrand(c *Ctx, s uint32) {
 	}
 }
 
-/* initialize by an array with array-length */
-/* init_key is the array for initializing keys */
-/* key_length is its length */
-/* slight change for C++, 2004/2/26 */
-func initByArray(c *Ctx, initKey []uint32, keyLength int) {
+// InitByArray to initialize with array-length
+// init_key is the array for initializing keys
+// key_length is its length
+// slight change for C++, 2004/2/26
+func InitByArray(c *Ctx, initKey []uint32, keyLength uint) {
 	var i, j, k int
 	initGenrand(c, uint32(19650218))
 	i = 1
 	j = 0
 
-	k = keyLength
+	k = int(keyLength)
 	if keyLength < n {
 		k = n
 	}
@@ -79,7 +79,7 @@ func initByArray(c *Ctx, initKey []uint32, keyLength int) {
 			c.MT[0] = c.MT[n-1]
 			i = 1
 		}
-		if j >= keyLength {
+		if j >= int(keyLength) {
 			j = 0
 		}
 	}
@@ -122,8 +122,8 @@ func genrandWholeArray(c *Ctx) {
 	return
 }
 
-/* generate 32-bit random integer */
-func genrandInt32(c *Ctx) uint32 {
+// GenrandInt32 to generate 32-bit random integer
+func GenrandInt32(c *Ctx) uint32 {
 	if c.Mti >= n {
 		genrandWholeArray(c)
 	}
