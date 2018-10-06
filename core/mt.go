@@ -8,15 +8,16 @@ package core
 // MaxKeySize is max key size supported by this cipher
 const MaxKeySize = 2048
 
-// CmtKeySize to iterate through key sizes
-func CmtKeySize(i int) int {
+// KeySize to iterate through key sizes
+func KeySize(i int) int {
 	return 128 + i*32
 }
 
 // MaxIVSize is max IV size supported
 const MaxIVSize = 2048
 
-func cmtIVSize(i int) int {
+// IVSize iterator
+func IVSize(i int) int {
 	return 128 + i*32
 }
 
@@ -24,8 +25,8 @@ func cmtIVSize(i int) int {
 type Ctx struct {
 	Keysize uint32 // size in bits
 	IVSize  uint32 // size in bits
-	Key     [MaxKeySize / 8]uint8
-	IV      [MaxIVSize / 8]uint8
+	Key     [MaxKeySize / 8]byte
+	IV      [MaxIVSize / 8]byte
 
 	MT    [624]uint32
 	Mti   int
@@ -59,13 +60,13 @@ func initGenrand(c *Ctx, s uint32) {
 // init_key is the array for initializing keys
 // key_length is its length
 // slight change for C++, 2004/2/26
-func InitByArray(c *Ctx, initKey []uint32, keyLength uint) {
+func InitByArray(c *Ctx, initKey []uint32, keyLength int) {
 	var i, j, k int
 	initGenrand(c, uint32(19650218))
 	i = 1
 	j = 0
 
-	k = int(keyLength)
+	k = keyLength
 	if keyLength < n {
 		k = n
 	}
@@ -79,7 +80,7 @@ func InitByArray(c *Ctx, initKey []uint32, keyLength uint) {
 			c.MT[0] = c.MT[n-1]
 			i = 1
 		}
-		if j >= int(keyLength) {
+		if j >= keyLength {
 			j = 0
 		}
 	}

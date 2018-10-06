@@ -20,7 +20,7 @@ func Init() {
 // KeySetup blah
 func KeySetup(
 	ctx *core.Ctx,
-	key []uint8,
+	key []byte,
 	keysize uint32, /* Key size in bits. */
 	ivsize uint32) { /* IV size in bits. */
 	var i uint32
@@ -38,7 +38,7 @@ func KeySetup(
 // IVSetup blah
 func IVSetup(
 	ctx *core.Ctx,
-	iv []uint8) {
+	iv []byte) {
 	var j int32
 	var i, t, x, k, s uint32
 	var initArray [(core.MaxKeySize + core.MaxIVSize) / 32]uint32
@@ -94,7 +94,7 @@ func IVSetup(
 		initArray[t+(s)] = x
 		s++
 	}
-	core.InitByArray(ctx, initArray[:], uint(t+s))
+	core.InitByArray(ctx, initArray[:], int(t+s))
 
 	ctx.Accum = 1
 	for i = 0; i < 64; i++ { /* idling 64 times */
@@ -105,37 +105,37 @@ func IVSetup(
 // EncryptBytes blah
 func EncryptBytes(
 	ctx *core.Ctx,
-	plaintext []uint8,
-	ciphertext []uint8,
+	plaintext []byte,
+	ciphertext []byte,
 	msglen uint32) { /* Message length in bytes. */
 	var i uint32
 	for i = 0; i < msglen; i++ {
 		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)
-		ciphertext[i] = plaintext[i] ^ (ctx.Accum >> 24)
+		ciphertext[i] = plaintext[i] ^ uint8(ctx.Accum>>24)
 	}
 }
 
 // DecryptBytes blah
 func DecryptBytes(
 	ctx *core.Ctx,
-	ciphertext []uint8,
-	plaintext []uint8,
+	ciphertext []byte,
+	plaintext []byte,
 	msglen uint32) { /* Message length in bytes. */
-	var i int32
+	var i uint32
 	for i = 0; i < msglen; i++ {
 		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)
-		plaintext[i] = ciphertext[i] ^ (ctx.Accum >> 24)
+		plaintext[i] = ciphertext[i] ^ uint8(ctx.Accum>>24)
 	}
 }
 
 // KeystreamBytes blah
 func KeystreamBytes(
 	ctx *core.Ctx,
-	keystream []uint8,
+	keystream []byte,
 	msglen uint32) {
-	var i int32
+	var i uint32
 	for i = 0; i < msglen; i++ {
 		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)
-		keystream[i] = (ctx.Accum >> 24)
+		keystream[i] = uint8(ctx.Accum >> 24)
 	}
 }
