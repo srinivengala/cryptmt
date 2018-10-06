@@ -5,28 +5,28 @@ package core
 /* MT included */
 /* 2005/04/16 */
 
-// MaxKeySize is max key size supported by this cipher
-const MaxKeySize = 2048
+// MaxKeySizeBits is max key size supported by this cipher
+const MaxKeySizeBits = 2048
 
-// KeySize to iterate through key sizes
-func KeySize(i int) int {
+// KeySizeBits to iterate through key sizes
+func KeySizeBits(i int) int {
 	return 128 + i*32
 }
 
-// MaxIVSize is max IV size supported
-const MaxIVSize = 2048
+// MaxIVSizeBits is max IV size supported
+const MaxIVSizeBits = 2048
 
-// IVSize iterator
-func IVSize(i int) int {
+// IVSizeBits iterator
+func IVSizeBits(i int) int {
 	return 128 + i*32
 }
 
 // Ctx is context
 type Ctx struct {
-	Keysize uint32 // size in bits
-	IVSize  uint32 // size in bits
-	Key     [MaxKeySize / 8]byte
-	IV      [MaxIVSize / 8]byte
+	KeySizeBits uint32 // size in bits
+	IVSizeBits  uint32 // size in bits
+	Key         [MaxKeySizeBits / 8]byte
+	IV          [MaxIVSizeBits / 8]byte
 
 	MT    [624]uint32
 	Mti   int
@@ -60,16 +60,18 @@ func initGenrand(c *Ctx, s uint32) {
 	}
 }
 
-// InitByArray to initialize with array-length
-// init_key is the array for initializing keys
-// key_length is its length
+// Init initializes MT with initKey array (recommended size core.N)
+//
+// originally was called InitByArray
+// initKey is the array for initializing keys
 // slight change for C++, 2004/2/26
-func InitByArray(c *Ctx, initKey []uint32, keyLength int) {
+func Init(c *Ctx, initKey []uint32) {
 	var i, j, k int
 	initGenrand(c, uint32(19650218))
 	i = 1
 	j = 0
 
+	keyLength := len(initKey)
 	k = keyLength
 	if keyLength < N {
 		k = N
@@ -99,16 +101,18 @@ func InitByArray(c *Ctx, initKey []uint32, keyLength int) {
 		}
 	}
 
-	c.MT[0] = uint32(0x80000000) /* MSB is 1; assuring non-zero initial array */
+	c.MT[0] = uint32(0x80000000) // MSB is 1; assuring non-zero initial array
 }
 
 var mag01 = [2]uint32{uint32(0x0), matrixA}
 
-/* generates whole array of random numbers in [0,0xffffffff]-interval */
+// genrandWholeArray generates whole array of random numbers in [0,0xffffffff]-interval
 func genrandWholeArray(c *Ctx) {
 	var y uint32
 
-	/* mag01[x] = x * MATRIX_A  for x=0,1 */
+	////
+	//// mag01[x] = x * MATRIX_A  for x=0,1
+	////
 
 	var kk int
 

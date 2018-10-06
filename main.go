@@ -13,8 +13,8 @@ func main() {
 
 	fmt.Print("Key sizes :")
 	ks := 0
-	for c := 0; ks < core.MaxKeySize; c++ {
-		ks = core.KeySize(c)
+	for c := 0; ks < core.MaxKeySizeBits; c++ {
+		ks = core.KeySizeBits(c)
 		fmt.Print(" ", ks)
 	}
 	fmt.Println()

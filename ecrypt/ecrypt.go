@@ -21,24 +21,24 @@ func Init() {
 func KeySetup(
 	ctx *core.Ctx,
 	key []byte,
-	keysize uint32, /* Key size in bits. */
-	ivsize uint32) error { /* IV size in bits. */
+	keySizeBits uint32, // Key size in bits.
+	ivSizeBits uint32) error { // IV size in bits.
 	var i uint32
 
-	if keysize < uint32(core.KeySize(0)) || keysize > uint32(core.MaxKeySize) {
-		return errors.New("Key size should be in range [" + strconv.Itoa(core.KeySize(0)) + ", " + strconv.Itoa(core.MaxKeySize) + "]")
+	if keySizeBits < uint32(core.KeySizeBits(0)) || keySizeBits > uint32(core.MaxKeySizeBits) {
+		return errors.New("Key size should be in range [" + strconv.Itoa(core.KeySizeBits(0)) + ", " + strconv.Itoa(core.MaxKeySizeBits) + "]")
 	}
-	if ivsize < uint32(core.IVSize(0)) || ivsize > uint32(core.MaxIVSize) {
-		return errors.New("IV size should be in range [" + strconv.Itoa(core.IVSize(0)) + ", " + strconv.Itoa(core.MaxIVSize) + "]")
+	if ivSizeBits < uint32(core.IVSizeBits(0)) || ivSizeBits > uint32(core.MaxIVSizeBits) {
+		return errors.New("IV size should be in range [" + strconv.Itoa(core.IVSizeBits(0)) + ", " + strconv.Itoa(core.MaxIVSizeBits) + "]")
 	}
-	ctx.Keysize = keysize
-	ctx.IVSize = ivsize
+	ctx.KeySizeBits = keySizeBits
+	ctx.IVSizeBits = ivSizeBits
 
-	for i = 0; i < keysize/8; i++ {
+	for i = 0; i < keySizeBits/8; i++ {
 		ctx.Key[i] = key[i]
 	}
 
-	ctx.Mti = core.N + 1 /* mti==N+1 means mt[N] is not initialized */
+	ctx.Mti = core.N + 1 //// mti==N+1 means mt[N] is not initialized
 	return nil
 }
 
@@ -48,14 +48,14 @@ func IVSetup(
 	iv []byte) {
 	var j int32
 	var i, t, x, k, s uint32
-	var initArray [(core.MaxKeySize + core.MaxIVSize) / 32]uint32
+	var initArray [(core.MaxKeySizeBits + core.MaxIVSizeBits) / 32]uint32
 
-	for i = 0; i < ctx.IVSize/8; i++ {
+	for i = 0; i < ctx.IVSizeBits/8; i++ {
 		ctx.IV[i] = iv[i]
 	}
 
 	j = 0
-	t = ctx.Keysize / 32
+	t = ctx.KeySizeBits / 32
 	for i = 0; i < t; i++ {
 		x = uint32(ctx.Key[j])
 		j++
@@ -67,9 +67,9 @@ func IVSetup(
 		j++
 		initArray[i] = x
 	}
-	if ctx.Keysize%32 != 0 {
+	if ctx.KeySizeBits%32 != 0 {
 		x = 0
-		k = (ctx.Keysize % 32) / 8
+		k = (ctx.KeySizeBits % 32) / 8
 		for i = 0; i < k; i++ {
 			x |= uint32(ctx.Key[j]) << (8 * k)
 			j++
@@ -79,7 +79,7 @@ func IVSetup(
 	}
 
 	j = 0
-	s = ctx.IVSize / 32
+	s = ctx.IVSizeBits / 32
 	for i = 0; i < s; i++ {
 		x = uint32(ctx.IV[j])
 		j++
@@ -91,20 +91,20 @@ func IVSetup(
 		j++
 		initArray[t+i] = x
 	}
-	if ctx.IVSize%32 != 0 {
+	if ctx.IVSizeBits%32 != 0 {
 		x = 0
-		k = (ctx.IVSize % 32) / 8
+		k = (ctx.IVSizeBits % 32) / 8
 		for i = 0; i < k; i++ {
 			x |= uint32(ctx.IV[j]) << (8 * k)
 			j++
 		}
-		initArray[t+(s)] = x
+		initArray[t+s] = x
 		s++
 	}
-	core.InitByArray(ctx, initArray[:], int(t+s))
+	core.Init(ctx, initArray[:]) // Initialize MT
 
 	ctx.Accum = 1
-	for i = 0; i < 64; i++ { /* idling 64 times */
+	for i = 0; i < 64; i++ { // warm up : idling 64 times
 		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)
 	}
 }
@@ -114,7 +114,7 @@ func EncryptBytes(
 	ctx *core.Ctx,
 	plaintext []byte,
 	ciphertext []byte,
-	msglen uint32) { /* Message length in bytes. */
+	msglen uint32) { // Message length in bytes.
 	var i uint32
 	for i = 0; i < msglen; i++ {
 		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)
