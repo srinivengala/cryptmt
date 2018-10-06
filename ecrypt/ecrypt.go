@@ -1,6 +1,9 @@
 package ecrypt
 
 import (
+	"errors"
+	"strconv"
+
 	"github.com/srinivengala/cryptmt/core"
 )
 
@@ -19,9 +22,15 @@ func KeySetup(
 	ctx *core.Ctx,
 	key []byte,
 	keysize uint32, /* Key size in bits. */
-	ivsize uint32) { /* IV size in bits. */
+	ivsize uint32) error { /* IV size in bits. */
 	var i uint32
 
+	if keysize < uint32(core.KeySize(0)) || keysize > uint32(core.MaxKeySize) {
+		return errors.New("Key size should be in range [" + strconv.Itoa(core.KeySize(0)) + ", " + strconv.Itoa(core.MaxKeySize) + "]")
+	}
+	if ivsize < uint32(core.IVSize(0)) || ivsize > uint32(core.MaxIVSize) {
+		return errors.New("IV size should be in range [" + strconv.Itoa(core.IVSize(0)) + ", " + strconv.Itoa(core.MaxIVSize) + "]")
+	}
 	ctx.Keysize = keysize
 	ctx.IVSize = ivsize
 
@@ -30,6 +39,7 @@ func KeySetup(
 	}
 
 	ctx.Mti = core.N + 1 /* mti==N+1 means mt[N] is not initialized */
+	return nil
 }
 
 // IVSetup blah
