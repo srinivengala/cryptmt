@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bytes"
+	"crypto/rand"
 	"fmt"
 	"os"
 
@@ -34,8 +34,12 @@ func simpleTestKeysize(textSize int, keySize int, ivSize int) {
 		plaintext[i] = 0
 	}
 
-	key := bytes.Repeat([]byte("12345678"), keySize/16)
-	iv := bytes.Repeat([]byte("87654321"), ivSize/16)
+	//key := bytes.Repeat([]byte("12345678"), keySize/16)
+	//iv := bytes.Repeat([]byte("87654321"), ivSize/16)
+	key := make([]byte, keySize)
+	iv := make([]byte, ivSize)
+	rand.Read(key)
+	rand.Read(iv)
 
 	err := ecrypt.KeySetup(&x, key, uint32(keySize), uint32(ivSize))
 	if err != nil {
@@ -45,7 +49,7 @@ func simpleTestKeysize(textSize int, keySize int, ivSize int) {
 	ecrypt.IVSetup(&x, iv)
 	ecrypt.EncryptBytes(&x, plaintext[:], ciphertext[:], uint32(textSize))
 
-	iv = bytes.Repeat([]byte("87654321"), ivSize/16)
+	//iv = bytes.Repeat([]byte("87654321"), ivSize/16)
 	ecrypt.IVSetup(&x, iv)
 	ecrypt.DecryptBytes(&x, ciphertext[:], plaintext2[:], uint32(textSize))
 
