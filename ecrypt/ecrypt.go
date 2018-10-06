@@ -4,9 +4,6 @@ import (
 	"github.com/srinivengala/cryptmt/core"
 )
 
-const n = 624
-const m = 397
-
 /* This is a stream cipher. The algorithm is as follows. */
 /* Generate 32 bit nonsecure random numbers by MT. */
 /* Multiply three consequtive words, and use only */
@@ -32,7 +29,7 @@ func KeySetup(
 		ctx.Key[i] = key[i]
 	}
 
-	ctx.Mti = n + 1 /* mti==N+1 means mt[N] is not initialized */
+	ctx.Mti = core.N + 1 /* mti==N+1 means mt[N] is not initialized */
 }
 
 // IVSetup blah

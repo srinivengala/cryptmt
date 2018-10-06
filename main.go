@@ -15,7 +15,7 @@ func main() {
 	var ciphertext [128]byte
 
 	for i = 0; i < 128; i++ {
-		plaintext[i] = 5
+		plaintext[i] = 0
 	}
 
 	ecrypt.KeySetup(&x, []byte("1234567812345678"), 128, 128)

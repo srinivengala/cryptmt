@@ -38,8 +38,12 @@ type Ctx struct {
 // By Hagita-Matsumoto-Nishimura-Saito
 
 // Period parameters
-const n = 624
-const m = 397
+
+// N is period parameter
+const N = 624
+
+// M is period parameter
+const M = 397
 const matrixA uint32 = 0x9908B0DF   // constant vector a
 const upperMask uint32 = 0x80000000 // most significant w-r bits
 const lowerMask uint32 = 0x7FFFFFFF // least significant r bits
@@ -47,7 +51,7 @@ const lowerMask uint32 = 0x7FFFFFFF // least significant r bits
 // initializes mt[N] with a seed
 func initGenrand(c *Ctx, s uint32) {
 	c.MT[0] = s & uint32(0xFFFFFFFF)
-	for c.Mti = 1; c.Mti < n; c.Mti++ {
+	for c.Mti = 1; c.Mti < N; c.Mti++ {
 		c.MT[c.Mti] = uint32(uint32(1812433253)*(c.MT[c.Mti-1]^(c.MT[c.Mti-1]>>30)) + uint32(c.Mti))
 		/* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
 		/* In the previous versions, MSBs of the seed affect   */
@@ -67,8 +71,8 @@ func InitByArray(c *Ctx, initKey []uint32, keyLength int) {
 	j = 0
 
 	k = keyLength
-	if keyLength < n {
-		k = n
+	if keyLength < N {
+		k = N
 	}
 
 	for ; k > 0; k-- {
@@ -76,8 +80,8 @@ func InitByArray(c *Ctx, initKey []uint32, keyLength int) {
 		c.MT[i] = uint32((c.MT[i] ^ ((c.MT[i-1] ^ (c.MT[i-1] >> 30)) * uint32(1664525))) + initKey[j] + uint32(j))
 		i++
 		j++
-		if i >= n {
-			c.MT[0] = c.MT[n-1]
+		if i >= N {
+			c.MT[0] = c.MT[N-1]
 			i = 1
 		}
 		if j >= keyLength {
@@ -85,12 +89,12 @@ func InitByArray(c *Ctx, initKey []uint32, keyLength int) {
 		}
 	}
 
-	for k = n - 1; k > 0; k-- {
+	for k = N - 1; k > 0; k-- {
 		//non linear
 		c.MT[i] = uint32((c.MT[i] ^ ((c.MT[i-1] ^ (c.MT[i-1] >> 30)) * uint32(1566083941))) - uint32(i))
 		i++
-		if i >= n {
-			c.MT[0] = c.MT[n-1]
+		if i >= N {
+			c.MT[0] = c.MT[N-1]
 			i = 1
 		}
 	}
@@ -108,16 +112,16 @@ func genrandWholeArray(c *Ctx) {
 
 	var kk int
 
-	for kk = 0; kk < n-m; kk++ {
+	for kk = 0; kk < N-M; kk++ {
 		y = (c.MT[kk] & upperMask) | (c.MT[kk+1] & lowerMask)
-		c.MT[kk] = c.MT[kk+m] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
+		c.MT[kk] = c.MT[kk+M] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
 	}
-	for ; kk < n-1; kk++ {
+	for ; kk < N-1; kk++ {
 		y = (c.MT[kk] & upperMask) | (c.MT[kk+1] & lowerMask)
-		c.MT[kk] = c.MT[kk+(m-n)] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
+		c.MT[kk] = c.MT[kk+(M-N)] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
 	}
-	y = (c.MT[n-1] & upperMask) | (c.MT[0] & lowerMask)
-	c.MT[n-1] = c.MT[m-1] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
+	y = (c.MT[N-1] & upperMask) | (c.MT[0] & lowerMask)
+	c.MT[N-1] = c.MT[M-1] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
 
 	c.Mti = 0
 	return
@@ -125,7 +129,7 @@ func genrandWholeArray(c *Ctx) {
 
 // GenrandInt32 to generate 32-bit random integer
 func GenrandInt32(c *Ctx) uint32 {
-	if c.Mti >= n {
+	if c.Mti >= N {
 		genrandWholeArray(c)
 	}
 
