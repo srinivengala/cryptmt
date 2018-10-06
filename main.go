@@ -1,29 +1,44 @@
 package main
 
-// ecrypt sync header CryptMT-v1
+/* CryptMT Stream Cipher, Relying Mersenne Twister */
+/* By Hagita-Matsumoto-Nishimura-Saito */
+/* MT included */
+/* 2005/04/16 */
 
-const cmtMaxKeySize = 2048
+// CmtMaxKeySize is max key size supported by this cipher
+const CmtMaxKeySize = 2048
 
-func cmtkeySize(i int) int {
+// CmtKeySize to iterate through key sizes
+func CmtKeySize(i int) int {
 	return 128 + i*32
 }
 
-const cmtMaxIVSize = 2048
+// CmtMaxIVSize is max IV size supported
+const CmtMaxIVSize = 2048
 
 func cmtIVSize(i int) int {
 	return 128 + i*32
 }
 
-type ctx struct {
+// Ctx is context
+type Ctx struct {
 	Keysize int32 // size in bits
 	IVSize  int32 // size in bits
-	Key     [cmtMaxKeySize / 8]uint8
-	IV      [cmtMaxIVSize / 8]uint8
+	Key     [CmtMaxKeySize / 8]uint8
+	IV      [CmtMaxIVSize / 8]uint8
 
 	MT    [624]uint32
 	Mti   int
 	Accum uint32
 }
+
+func main() {
+
+}
+
+///////////////////////////
+// CryptMT v1.0 Implementation
+// By Hagita-Matsumoto-Nishimura-Saito
 
 // Period parameters
 const n = 624
@@ -33,7 +48,7 @@ const upperMask uint32 = 0x80000000 // most significant w-r bits
 const lowerMask uint32 = 0x7FFFFFFF // least significant r bits
 
 // initializes mt[N] with a seed
-func initGenrand(c *ctx, s uint32) {
+func initGenrand(c *Ctx, s uint32) {
 	c.MT[0] = s & uint32(0xFFFFFFFF)
 	for c.Mti = 1; c.Mti < n; c.Mti++ {
 		c.MT[c.Mti] = uint32(uint32(1812433253)*(c.MT[c.Mti-1]^(c.MT[c.Mti-1]>>30)) + uint32(c.Mti))
@@ -48,7 +63,7 @@ func initGenrand(c *ctx, s uint32) {
 /* init_key is the array for initializing keys */
 /* key_length is its length */
 /* slight change for C++, 2004/2/26 */
-func initByArray(c *ctx, initKey []uint32, keyLength int) {
+func initByArray(c *Ctx, initKey []uint32, keyLength int) {
 	var i, j, k int
 	initGenrand(c, uint32(19650218))
 	i = 1
@@ -89,7 +104,7 @@ func initByArray(c *ctx, initKey []uint32, keyLength int) {
 var mag01 = [2]uint32{uint32(0x0), matrixA}
 
 /* generates whole array of random numbers in [0,0xffffffff]-interval */
-func genrandWholeArray(c *ctx) {
+func genrandWholeArray(c *Ctx) {
 	var y uint32
 
 	/* mag01[x] = x * MATRIX_A  for x=0,1 */
@@ -112,7 +127,7 @@ func genrandWholeArray(c *ctx) {
 }
 
 /* generate 32-bit random integer */
-func genrandInt32(c *ctx) uint32 {
+func genrandInt32(c *Ctx) uint32 {
 	if c.Mti >= n {
 		genrandWholeArray(c)
 	}
@@ -121,8 +136,4 @@ func genrandInt32(c *ctx) uint32 {
 	ret := c.MT[c.Mti]
 	c.Mti++
 	return ret
-}
-
-func main() {
-
 }
