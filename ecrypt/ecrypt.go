@@ -4,84 +4,102 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/srinivengala/cryptmt/core"
+	"github.com/srinivengala/cryptmt/random"
 )
+
+// MaxKeySizeBits is max key size supported by this cipher
+const MaxKeySizeBits = 2048
+
+// KeySizeBits to iterate through key sizes
+func KeySizeBits(i int) int {
+	return 128 + i*32
+}
+
+// MaxIVSizeBits is max IV size supported
+const MaxIVSizeBits = 2048
+
+// IVSizeBits iterator
+func IVSizeBits(i int) int {
+	return 128 + i*32
+}
+
+// Ecrypt Implementation
+type Ecrypt struct {
+	ctx         *random.Ctx
+	KeySizeBits uint32 // size in bits
+	IVSizeBits  uint32 // size in bits
+	Key         [MaxKeySizeBits / 8]byte
+	IV          [MaxIVSizeBits / 8]byte
+}
 
 /* This is a stream cipher. The algorithm is as follows. */
 /* Generate 32 bit nonsecure random numbers by MT. */
 /* Multiply three consequtive words, and use only */
 /* the most significant 8 bits. */
 
-// Init cipher
-func Init() {
-	/* do nothing */
+// New to Init cipher
+func New() *Ecrypt {
+	return &Ecrypt{}
 }
 
 // KeySetup blah
-func KeySetup(
-	ctx *core.Ctx,
-	key []byte,
-	//keySizeBits uint32, // Key size in bits.
-	//ivSizeBits uint32) error { // IV size in bits.
-) error {
+func (e *Ecrypt) KeySetup(key []byte) error {
 
 	var i uint32
 	keySizeBits := uint32(len(key) * 8)
 
-	if keySizeBits < uint32(core.KeySizeBits(0)) || keySizeBits > uint32(core.MaxKeySizeBits) {
-		return errors.New("Key size should be in range [" + strconv.Itoa(core.KeySizeBits(0)) + ", " + strconv.Itoa(core.MaxKeySizeBits) + "]")
+	if keySizeBits < uint32(KeySizeBits(0)) ||
+		keySizeBits > uint32(MaxKeySizeBits) {
+		return errors.New("Key size should be in range [" +
+			strconv.Itoa(KeySizeBits(0)) + ", " +
+			strconv.Itoa(MaxKeySizeBits) + "]")
 	}
-	// if ivSizeBits < uint32(core.IVSizeBits(0)) || ivSizeBits > uint32(core.MaxIVSizeBits) {
-	// 	return errors.New("IV size should be in range [" + strconv.Itoa(core.IVSizeBits(0)) + ", " + strconv.Itoa(core.MaxIVSizeBits) + "]")
-	// }
-	ctx.KeySizeBits = keySizeBits
-	//ctx.IVSizeBits = ivSizeBits
+
+	e.KeySizeBits = keySizeBits
 
 	for i = 0; i < keySizeBits/8; i++ {
-		ctx.Key[i] = key[i]
+		e.Key[i] = key[i]
 	}
 
-	ctx.Mti = core.N + 1 //// mti==N+1 means mt[N] is not initialized
 	return nil
 }
 
 // IVSetup blah
-func IVSetup(
-	ctx *core.Ctx,
-	iv []byte) error {
-
+func (e *Ecrypt) IVSetup(iv []byte) error {
 	ivSizeBits := uint32(len(iv) * 8)
-	if ivSizeBits < uint32(core.IVSizeBits(0)) || ivSizeBits > uint32(core.MaxIVSizeBits) {
-		return errors.New("IV size should be in range [" + strconv.Itoa(core.IVSizeBits(0)) + ", " + strconv.Itoa(core.MaxIVSizeBits) + "]")
+	if ivSizeBits < uint32(IVSizeBits(0)) || ivSizeBits > uint32(MaxIVSizeBits) {
+		return errors.New("IV size should be in range [" +
+			strconv.Itoa(IVSizeBits(0)) + ", " +
+			strconv.Itoa(MaxIVSizeBits) + "]")
 	}
-	ctx.IVSizeBits = ivSizeBits
+	e.IVSizeBits = ivSizeBits
 
 	var j int32
 	var i, t, x, k, s uint32
-	var initArray [(core.MaxKeySizeBits + core.MaxIVSizeBits) / 32]uint32
+	var initArray [(MaxKeySizeBits + MaxIVSizeBits) / 32]uint32
 
-	for i = 0; i < ctx.IVSizeBits/8; i++ {
-		ctx.IV[i] = iv[i]
+	for _, v := range iv {
+		e.IV[i] = v
 	}
 
 	j = 0
-	t = ctx.KeySizeBits / 32
+	t = e.KeySizeBits / 32
 	for i = 0; i < t; i++ {
-		x = uint32(ctx.Key[j])
+		x = uint32(e.Key[j])
 		j++
-		x |= uint32(ctx.Key[j]) << 8
+		x |= uint32(e.Key[j]) << 8
 		j++
-		x |= uint32(ctx.Key[j]) << 16
+		x |= uint32(e.Key[j]) << 16
 		j++
-		x |= uint32(ctx.Key[j]) << 24
+		x |= uint32(e.Key[j]) << 24
 		j++
 		initArray[i] = x
 	}
-	if ctx.KeySizeBits%32 != 0 {
+	if e.KeySizeBits%32 != 0 {
 		x = 0
-		k = (ctx.KeySizeBits % 32) / 8
+		k = (e.KeySizeBits % 32) / 8
 		for i = 0; i < k; i++ {
-			x |= uint32(ctx.Key[j]) << (8 * k)
+			x |= uint32(e.Key[j]) << (8 * k)
 			j++
 		}
 		initArray[t] = x
@@ -89,74 +107,71 @@ func IVSetup(
 	}
 
 	j = 0
-	s = ctx.IVSizeBits / 32
+	s = e.IVSizeBits / 32
 	for i = 0; i < s; i++ {
-		x = uint32(ctx.IV[j])
+		x = uint32(e.IV[j])
 		j++
-		x |= uint32(ctx.IV[j]) << 8
+		x |= uint32(e.IV[j]) << 8
 		j++
-		x |= uint32(ctx.IV[j]) << 16
+		x |= uint32(e.IV[j]) << 16
 		j++
-		x |= uint32(ctx.IV[j]) << 24
+		x |= uint32(e.IV[j]) << 24
 		j++
 		initArray[t+i] = x
 	}
-	if ctx.IVSizeBits%32 != 0 {
+	if e.IVSizeBits%32 != 0 {
 		x = 0
-		k = (ctx.IVSizeBits % 32) / 8
+		k = (e.IVSizeBits % 32) / 8
 		for i = 0; i < k; i++ {
-			x |= uint32(ctx.IV[j]) << (8 * k)
+			x |= uint32(e.IV[j]) << (8 * k)
 			j++
 		}
 		initArray[t+s] = x
 		s++
 	}
-	core.Init(ctx, initArray[:]) // Initialize MT
+	e.ctx = random.NewArraySeeded(initArray[:]) // Initialize MT
 
-	ctx.Accum = 1
+	e.ctx.Accum = 1
 	for i = 0; i < 64; i++ { // warm up : idling 64 times
-		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)
+		e.ctx.Accum *= (e.ctx.GenrandInt32() | 0x1)
 	}
 	return nil
 }
 
 // EncryptBytes blah
-func EncryptBytes(
-	ctx *core.Ctx,
+func (e *Ecrypt) EncryptBytes(
 	plaintext []byte,
 	ciphertext []byte,
 	msglen uint32) { // Message length in bytes.
 
 	var i uint32
 	for i = 0; i < msglen; i++ {
-		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)
-		ciphertext[i] = plaintext[i] ^ uint8(ctx.Accum>>24)
+		e.ctx.Accum *= (e.ctx.GenrandInt32() | 0x1)
+		ciphertext[i] = plaintext[i] ^ uint8(e.ctx.Accum>>24)
 	}
 }
 
 // DecryptBytes blah
-func DecryptBytes(
-	ctx *core.Ctx,
+func (e *Ecrypt) DecryptBytes(
 	ciphertext []byte,
 	plaintext []byte,
 	msglen uint32) { /* Message length in bytes. */
 
 	var i uint32
 	for i = 0; i < msglen; i++ {
-		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)
-		plaintext[i] = ciphertext[i] ^ uint8(ctx.Accum>>24)
+		e.ctx.Accum *= (e.ctx.GenrandInt32() | 0x1)
+		plaintext[i] = ciphertext[i] ^ uint8(e.ctx.Accum>>24)
 	}
 }
 
 // KeystreamBytes blah
-func KeystreamBytes(
-	ctx *core.Ctx,
+func (e *Ecrypt) KeystreamBytes(
 	keystream []byte,
 	msglen uint32) {
 
 	var i uint32
 	for i = 0; i < msglen; i++ {
-		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)
-		keystream[i] = uint8(ctx.Accum >> 24)
+		e.ctx.Accum *= (e.ctx.GenrandInt32() | 0x1)
+		keystream[i] = uint8(e.ctx.Accum >> 24)
 	}
 }

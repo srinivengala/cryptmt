@@ -1,36 +1,15 @@
-package core
+package random
 
 /* CryptMT Stream Cipher, Relying Mersenne Twister */
 /* By Hagita-Matsumoto-Nishimura-Saito */
 /* MT included */
 /* 2005/04/16 */
 
-// MaxKeySizeBits is max key size supported by this cipher
-const MaxKeySizeBits = 2048
-
-// KeySizeBits to iterate through key sizes
-func KeySizeBits(i int) int {
-	return 128 + i*32
-}
-
-// MaxIVSizeBits is max IV size supported
-const MaxIVSizeBits = 2048
-
-// IVSizeBits iterator
-func IVSizeBits(i int) int {
-	return 128 + i*32
-}
-
 // Ctx is context
 type Ctx struct {
-	KeySizeBits uint32 // size in bits
-	IVSizeBits  uint32 // size in bits
-	Key         [MaxKeySizeBits / 8]byte
-	IV          [MaxIVSizeBits / 8]byte
-
 	MT    [624]uint32
 	Mti   int
-	Accum uint32
+	Accum uint32 //TODO: refactor: accumulator logic belongs to MT.
 }
 
 ///////////////////////////
@@ -52,8 +31,9 @@ const matrixA uint32 = 0x9908B0DF   // constant vector a
 const upperMask uint32 = 0x80000000 // most significant w-r bits
 const lowerMask uint32 = 0x7FFFFFFF // least significant r bits
 
-// initializes mt[N] with a seed
-func initGenrand(c *Ctx, s uint32) {
+// NewSeeded initializes mt[N] with a seed
+func NewSeeded(s uint32) *Ctx {
+	c := new(Ctx)
 	c.MT[0] = s & uint32(0xFFFFFFFF)
 	for c.Mti = 1; c.Mti < N; c.Mti++ {
 		c.MT[c.Mti] = uint32(uint32(1812433253)*(c.MT[c.Mti-1]^(c.MT[c.Mti-1]>>30)) + uint32(c.Mti))
@@ -62,16 +42,17 @@ func initGenrand(c *Ctx, s uint32) {
 		/* only MSBs of the array mt[].                        */
 		/* 2002/01/09 modified by Makoto Matsumoto             */
 	}
+	return c
 }
 
-// Init initializes MT with initKey array (recommended size core.N)
+// NewArraySeeded initializes MT with initKey array (recommended size core.N)
 //
 // originally was called InitByArray
 // initKey is the array for initializing keys
 // slight change for C++, 2004/2/26
-func Init(c *Ctx, initKey []uint32) {
+func NewArraySeeded(initKey []uint32) *Ctx {
 	var i, j, k int
-	initGenrand(c, uint32(19650218))
+	c := NewSeeded(uint32(19650218))
 	i = 1
 	j = 0
 
@@ -106,12 +87,14 @@ func Init(c *Ctx, initKey []uint32) {
 	}
 
 	c.MT[0] = uint32(0x80000000) // MSB is 1; assuring non-zero initial array
+	c.Mti = N + 1                //// mti==N+1 means mt[N] is not initialized
+	return c
 }
 
 var mag01 = [2]uint32{uint32(0x0), matrixA}
 
-// genrandWholeArray generates whole array of random numbers in [0,0xffffffff]-interval
-func genrandWholeArray(c *Ctx) {
+// InternalStateBlender generates whole array of random numbers in [0,0xffffffff]-interval
+func (c *Ctx) InternalStateBlender() {
 	var y uint32
 
 	////
@@ -136,9 +119,9 @@ func genrandWholeArray(c *Ctx) {
 }
 
 // GenrandInt32 to generate 32-bit random integer
-func GenrandInt32(c *Ctx) uint32 {
+func (c *Ctx) GenrandInt32() uint32 {
 	if c.Mti >= N {
-		genrandWholeArray(c)
+		c.InternalStateBlender()
 	}
 
 	//no tampering

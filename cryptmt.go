@@ -9,32 +9,38 @@ import (
 	"errors"
 
 	"github.com/srinivengala/cryptmt/core"
+	"github.com/srinivengala/cryptmt/ecrypt"
 )
 
 // Implement cipher.AEAD, cipher.Block, cipher.Stream
 //
 
-// Implements cipher.AEAD
-type cryptmtAead struct {
+// Aead Implements cipher.AEAD
+type Aead struct {
 	ctx *core.Ctx
 }
 
 // NewAead returns cryptmt aead implementation
-func NewAead(key []byte, IV []byte) *cipher.AEAD {
-	//var cae cryptmtAead
-	//ecrypt.KeySetup(ret, key)
-	return nil
+func NewAead(key []byte, IV []byte) (cipher.AEAD, error) {
+	c := new(Aead)
+	if err := ecrypt.KeySetup(c.ctx, key[:]); err != nil {
+		return nil, err
+	}
+	if err := ecrypt.IVSetup(c.ctx, IV[:]); err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 // NonceSize returns the size of the nonce that must be passed to Seal
 // and Open.
-func (c *cryptmtAead) NonceSize() int {
+func (c *Aead) NonceSize() int {
 	return 0
 }
 
 // Overhead returns the maximum difference between the lengths of a
 // plaintext and its ciphertext.
-func (c *cryptmtAead) Overhead() int {
+func (c *Aead) Overhead() int {
 	return 0
 }
 
@@ -45,7 +51,7 @@ func (c *cryptmtAead) Overhead() int {
 //
 // The plaintext and dst must overlap exactly or not at all. To reuse
 // plaintext's storage for the encrypted output, use plaintext[:0] as dst.
-func (c *cryptmtAead) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
+func (c *Aead) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	return nil
 }
 
@@ -60,6 +66,6 @@ func (c *cryptmtAead) Seal(dst, nonce, plaintext, additionalData []byte) []byte 
 //
 // Even if the function fails, the contents of dst, up to its capacity,
 // may be overwritten.
-func (c *cryptmtAead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
+func (c *Aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
 	return nil, errors.New("not implemented")
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/srinivengala/cryptmt/core"
 	"github.com/srinivengala/cryptmt/ecrypt"
 )
 
@@ -13,8 +12,8 @@ func main() {
 
 	fmt.Print("Key sizes :")
 	ks := 0
-	for c := 0; ks < core.MaxKeySizeBits; c++ {
-		ks = core.KeySizeBits(c)
+	for c := 0; ks < ecrypt.MaxKeySizeBits; c++ {
+		ks = ecrypt.KeySizeBits(c)
 		fmt.Print(" ", ks)
 	}
 	fmt.Println()
@@ -25,7 +24,7 @@ func main() {
 
 func simpleTestKeysize(textSize int, keySize int, ivSize int) {
 	var i int
-	var x core.Ctx
+	ecrypt := ecrypt.New()
 	plaintext := make([]byte, textSize)
 	plaintext2 := make([]byte, textSize)
 	ciphertext := make([]byte, textSize)
@@ -41,19 +40,19 @@ func simpleTestKeysize(textSize int, keySize int, ivSize int) {
 	rand.Read(key)
 	rand.Read(iv)
 
-	if err := ecrypt.KeySetup(&x, key); err != nil {
+	if err := ecrypt.KeySetup(key); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-	if err := ecrypt.IVSetup(&x, iv); err != nil {
+	if err := ecrypt.IVSetup(iv); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-	ecrypt.EncryptBytes(&x, plaintext[:], ciphertext[:], uint32(textSize))
+	ecrypt.EncryptBytes(plaintext[:], ciphertext[:], uint32(textSize))
 
 	//iv = bytes.Repeat([]byte("87654321"), ivSize/16)
-	ecrypt.IVSetup(&x, iv)
-	ecrypt.DecryptBytes(&x, ciphertext[:], plaintext2[:], uint32(textSize))
+	ecrypt.IVSetup(iv)
+	ecrypt.DecryptBytes(ciphertext[:], plaintext2[:], uint32(textSize))
 
 	display(plaintext2, ciphertext)
 }
@@ -107,7 +106,6 @@ func display(plaintext []byte, ciphertext []byte) {
 
 func simpleTest() {
 	var i int
-	var x core.Ctx
 	var plaintext [128]byte
 	var plaintext2 [128]byte
 	var ciphertext [128]byte
@@ -116,16 +114,17 @@ func simpleTest() {
 		plaintext[i] = 0
 	}
 
-	ecrypt.KeySetup(&x, []byte("1234567812345678"))
-	ecrypt.IVSetup(&x, []byte("8765432187654321"))
-	ecrypt.EncryptBytes(&x, plaintext[:], ciphertext[:], 128)
+	ecrypt := ecrypt.New()
+	ecrypt.KeySetup([]byte("1234567812345678"))
+	ecrypt.IVSetup([]byte("8765432187654321"))
+	ecrypt.EncryptBytes(plaintext[:], ciphertext[:], 128)
 	for i = 0; i < 16; i++ {
 		fmt.Printf("%2x ", ciphertext[i])
 	}
 	fmt.Printf("\n")
 
-	ecrypt.IVSetup(&x, []byte("8765432187654321"))
-	ecrypt.DecryptBytes(&x, ciphertext[:], plaintext2[:], 128)
+	ecrypt.IVSetup([]byte("8765432187654321"))
+	ecrypt.DecryptBytes(ciphertext[:], plaintext2[:], 128)
 	for i = 0; i < 16; i++ {
 		fmt.Printf("%2x ", plaintext2[i])
 	}
