@@ -21,18 +21,21 @@ func Init() {
 func KeySetup(
 	ctx *core.Ctx,
 	key []byte,
-	keySizeBits uint32, // Key size in bits.
-	ivSizeBits uint32) error { // IV size in bits.
+	//keySizeBits uint32, // Key size in bits.
+	//ivSizeBits uint32) error { // IV size in bits.
+) error {
+
 	var i uint32
+	keySizeBits := uint32(len(key) * 8)
 
 	if keySizeBits < uint32(core.KeySizeBits(0)) || keySizeBits > uint32(core.MaxKeySizeBits) {
 		return errors.New("Key size should be in range [" + strconv.Itoa(core.KeySizeBits(0)) + ", " + strconv.Itoa(core.MaxKeySizeBits) + "]")
 	}
-	if ivSizeBits < uint32(core.IVSizeBits(0)) || ivSizeBits > uint32(core.MaxIVSizeBits) {
-		return errors.New("IV size should be in range [" + strconv.Itoa(core.IVSizeBits(0)) + ", " + strconv.Itoa(core.MaxIVSizeBits) + "]")
-	}
+	// if ivSizeBits < uint32(core.IVSizeBits(0)) || ivSizeBits > uint32(core.MaxIVSizeBits) {
+	// 	return errors.New("IV size should be in range [" + strconv.Itoa(core.IVSizeBits(0)) + ", " + strconv.Itoa(core.MaxIVSizeBits) + "]")
+	// }
 	ctx.KeySizeBits = keySizeBits
-	ctx.IVSizeBits = ivSizeBits
+	//ctx.IVSizeBits = ivSizeBits
 
 	for i = 0; i < keySizeBits/8; i++ {
 		ctx.Key[i] = key[i]
@@ -45,7 +48,14 @@ func KeySetup(
 // IVSetup blah
 func IVSetup(
 	ctx *core.Ctx,
-	iv []byte) {
+	iv []byte) error {
+
+	ivSizeBits := uint32(len(iv) * 8)
+	if ivSizeBits < uint32(core.IVSizeBits(0)) || ivSizeBits > uint32(core.MaxIVSizeBits) {
+		return errors.New("IV size should be in range [" + strconv.Itoa(core.IVSizeBits(0)) + ", " + strconv.Itoa(core.MaxIVSizeBits) + "]")
+	}
+	ctx.IVSizeBits = ivSizeBits
+
 	var j int32
 	var i, t, x, k, s uint32
 	var initArray [(core.MaxKeySizeBits + core.MaxIVSizeBits) / 32]uint32
@@ -107,6 +117,7 @@ func IVSetup(
 	for i = 0; i < 64; i++ { // warm up : idling 64 times
 		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)
 	}
+	return nil
 }
 
 // EncryptBytes blah
@@ -115,6 +126,7 @@ func EncryptBytes(
 	plaintext []byte,
 	ciphertext []byte,
 	msglen uint32) { // Message length in bytes.
+
 	var i uint32
 	for i = 0; i < msglen; i++ {
 		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)
@@ -128,6 +140,7 @@ func DecryptBytes(
 	ciphertext []byte,
 	plaintext []byte,
 	msglen uint32) { /* Message length in bytes. */
+
 	var i uint32
 	for i = 0; i < msglen; i++ {
 		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)
@@ -140,6 +153,7 @@ func KeystreamBytes(
 	ctx *core.Ctx,
 	keystream []byte,
 	msglen uint32) {
+
 	var i uint32
 	for i = 0; i < msglen; i++ {
 		ctx.Accum *= (core.GenrandInt32(ctx) | 0x1)

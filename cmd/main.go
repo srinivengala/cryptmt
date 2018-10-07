@@ -41,12 +41,14 @@ func simpleTestKeysize(textSize int, keySize int, ivSize int) {
 	rand.Read(key)
 	rand.Read(iv)
 
-	err := ecrypt.KeySetup(&x, key, uint32(keySize), uint32(ivSize))
-	if err != nil {
+	if err := ecrypt.KeySetup(&x, key); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-	ecrypt.IVSetup(&x, iv)
+	if err := ecrypt.IVSetup(&x, iv); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 	ecrypt.EncryptBytes(&x, plaintext[:], ciphertext[:], uint32(textSize))
 
 	//iv = bytes.Repeat([]byte("87654321"), ivSize/16)
@@ -114,7 +116,7 @@ func simpleTest() {
 		plaintext[i] = 0
 	}
 
-	ecrypt.KeySetup(&x, []byte("1234567812345678"), 128, 128)
+	ecrypt.KeySetup(&x, []byte("1234567812345678"))
 	ecrypt.IVSetup(&x, []byte("8765432187654321"))
 	ecrypt.EncryptBytes(&x, plaintext[:], ciphertext[:], 128)
 	for i = 0; i < 16; i++ {
