@@ -9,7 +9,7 @@ package random
 type Ctx struct {
 	MT    [624]uint32
 	Mti   int
-	Accum uint32 //TODO: refactor: accumulator logic belongs to MT.
+	Accum uint32
 }
 
 ///////////////////////////
@@ -41,6 +41,12 @@ func NewSeeded(s uint32) *Ctx {
 		/* In the previous versions, MSBs of the seed affect   */
 		/* only MSBs of the array mt[].                        */
 		/* 2002/01/09 modified by Makoto Matsumoto             */
+	}
+
+	c.Mti = N + 1 //// mti==N+1 means mt[N] needs Blending/Initializing
+	c.Accum = 1
+	for i := 0; i < 64; i++ { // warm up : idling 64 times
+		c.Next()
 	}
 	return c
 }
@@ -87,14 +93,18 @@ func NewArraySeeded(initKey []uint32) *Ctx {
 	}
 
 	c.MT[0] = uint32(0x80000000) // MSB is 1; assuring non-zero initial array
-	c.Mti = N + 1                //// mti==N+1 means mt[N] is not initialized
+	c.Mti = N + 1                //// mti==N+1 means mt[N] needs Blending/Initializing
+	c.Accum = 1
+	for i = 0; i < 64; i++ { // warm up : idling 64 times
+		c.Next()
+	}
 	return c
 }
 
 var mag01 = [2]uint32{uint32(0x0), matrixA}
 
-// InternalStateBlender generates whole array of random numbers in [0,0xffffffff]-interval
-func (c *Ctx) InternalStateBlender() {
+// BlendInternalState generates whole array of random numbers in [0,0xffffffff]-interval
+func (c *Ctx) BlendInternalState() {
 	var y uint32
 
 	////
@@ -118,14 +128,20 @@ func (c *Ctx) InternalStateBlender() {
 	return
 }
 
-// GenrandInt32 to generate 32-bit random integer
-func (c *Ctx) GenrandInt32() uint32 {
+// NextWord to generate 32-bit random integer
+func (c *Ctx) nextWord() uint32 {
 	if c.Mti >= N {
-		c.InternalStateBlender()
+		c.BlendInternalState()
 	}
 
 	//no tampering
 	ret := c.MT[c.Mti]
 	c.Mti++
 	return ret
+}
+
+// Next generates next random byte
+func (c *Ctx) Next() byte {
+	c.Accum *= (c.nextWord() | 0x1)
+	return byte(c.Accum >> 24)
 }

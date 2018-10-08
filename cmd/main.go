@@ -3,23 +3,26 @@ package main
 import (
 	"crypto/rand"
 	"fmt"
-	"os"
 
 	"github.com/srinivengala/cryptmt/ecrypt"
 )
 
 func main() {
 
-	fmt.Print("Key sizes :")
-	ks := 0
-	for c := 0; ks < ecrypt.MaxKeySizeBits; c++ {
-		ks = ecrypt.KeySizeBits(c)
-		fmt.Print(" ", ks)
-	}
-	fmt.Println()
-	fmt.Println()
+	fmt.Println("Key sizes in bytes:", ecrypt.GetKeySizesString(", "))
 
-	simpleTestKeysize(60, 2048, 128) //2048 bits or 256 bytes
+	fmt.Println("****")
+	simpleTestKeysize(60, 255, 15)
+	fmt.Println("****")
+	simpleTestKeysize(60, 256, 17)
+	fmt.Println("****")
+	simpleTestKeysize(60, 16, 16)
+	fmt.Println("****")
+	simpleTestKeysize(60, 256, 256)
+	fmt.Println("****")
+	simpleTestKeysize(60, 16, 256)
+	fmt.Println("****")
+	simpleTestKeysize(60, 256, 16)
 }
 
 func simpleTestKeysize(textSize int, keySize int, ivSize int) {
@@ -41,12 +44,12 @@ func simpleTestKeysize(textSize int, keySize int, ivSize int) {
 	rand.Read(iv)
 
 	if err := ecrypt.KeySetup(key); err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		fmt.Println("Error: KeySetup ", err.Error())
+		return
 	}
 	if err := ecrypt.IVSetup(iv); err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		fmt.Println("Error: IVSetup ", err.Error())
+		return
 	}
 	ecrypt.EncryptBytes(plaintext[:], ciphertext[:], uint32(textSize))
 

@@ -3,33 +3,76 @@ package ecrypt
 import (
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/srinivengala/cryptmt/random"
 )
 
-// MaxKeySizeBits is max key size supported by this cipher
-const MaxKeySizeBits = 2048
+// MaxKeySize is max key size bytes supported by this cipher
+const MaxKeySize = 2048 / 8
 
-// KeySizeBits to iterate through key sizes
-func KeySizeBits(i int) int {
-	return 128 + i*32
+// KeySizeItr to iterate through key sizes
+func KeySizeItr(i int) int {
+	return (128 + i*32) / 8
 }
 
-// MaxIVSizeBits is max IV size supported
-const MaxIVSizeBits = 2048
+// MaxIVSize is max IV size bytes supported by this cipher
+const MaxIVSize = 2048 / 8
 
-// IVSizeBits iterator
-func IVSizeBits(i int) int {
-	return 128 + i*32
+// IVSizeItr to iterate through IV sizes
+func IVSizeItr(i int) int {
+	return (128 + i*32) / 8
+}
+
+// GetKeySizes returns all supported key sizes as string
+func GetKeySizes() []int {
+	sizes := make([]int, 0, 62)
+	sz := KeySizeItr(0)
+	for i := 1; sz <= MaxKeySize; i++ {
+		sizes = append(sizes, sz)
+		sz = KeySizeItr(i)
+	}
+	return sizes
+}
+
+// GetKeySizesString makes a string of all supported key sizes
+func GetKeySizesString(join string) string {
+	ints := GetKeySizes()
+	strs := make([]string, 0, len(ints))
+
+	for _, v := range ints {
+		strs = append(strs, strconv.Itoa(v))
+	}
+	return strings.Join(strs, join)
+}
+
+// GetKeySizeRange gets minimum and maximum supported key sizes
+func GetKeySizeRange() (min, max int) {
+	return KeySizeItr(0), MaxKeySize
+}
+
+// IsValidKeySize checks if the size in bytes is a valid key size
+func IsValidKeySize(size int) bool {
+	for _, v := range GetKeySizes() {
+		if size == v {
+			return true
+		}
+	}
+	return false
+}
+
+// IsValidIVSize checks if the size in bytes is a valid IV size
+func IsValidIVSize(size int) bool {
+	return IsValidKeySize(size)
 }
 
 // Ecrypt Implementation
 type Ecrypt struct {
-	ctx         *random.Ctx
-	KeySizeBits uint32 // size in bits
-	IVSizeBits  uint32 // size in bits
-	Key         [MaxKeySizeBits / 8]byte
-	IV          [MaxIVSizeBits / 8]byte
+	ctx     *random.Ctx
+	KeySize uint32 // size in bytes
+	IVSize  uint32 // size in bytes
+	Key     [MaxKeySize]byte
+	IV      [MaxIVSize]byte
 }
 
 /* This is a stream cipher. The algorithm is as follows. */
@@ -42,48 +85,45 @@ func New() *Ecrypt {
 	return &Ecrypt{}
 }
 
-// KeySetup blah
+// KeySetup is just to capture first half of bytes needed for making MT initialization vector
 func (e *Ecrypt) KeySetup(key []byte) error {
 
-	var i uint32
-	keySizeBits := uint32(len(key) * 8)
+	keySize := len(key)
 
-	if keySizeBits < uint32(KeySizeBits(0)) ||
-		keySizeBits > uint32(MaxKeySizeBits) {
-		return errors.New("Key size should be in range [" +
-			strconv.Itoa(KeySizeBits(0)) + ", " +
-			strconv.Itoa(MaxKeySizeBits) + "]")
+	if !IsValidKeySize(keySize) {
+		return errors.New("Key size in bytes should be in range [" +
+			strconv.Itoa(KeySizeItr(0)) + ", " +
+			strconv.Itoa(MaxKeySize) + "]: " +
+			GetKeySizesString(", "))
 	}
 
-	e.KeySizeBits = keySizeBits
+	e.KeySize = uint32(keySize)
 
-	for i = 0; i < keySizeBits/8; i++ {
-		e.Key[i] = key[i]
-	}
+	copy(e.Key[:], key)
 
 	return nil
 }
 
-// IVSetup blah
+// IVSetup is just to capture second half of bytes needed for making MT initialization vector
 func (e *Ecrypt) IVSetup(iv []byte) error {
-	ivSizeBits := uint32(len(iv) * 8)
-	if ivSizeBits < uint32(IVSizeBits(0)) || ivSizeBits > uint32(MaxIVSizeBits) {
-		return errors.New("IV size should be in range [" +
-			strconv.Itoa(IVSizeBits(0)) + ", " +
-			strconv.Itoa(MaxIVSizeBits) + "]")
+	ivSize := len(iv)
+	if !IsValidIVSize(ivSize) {
+		return errors.New("IV size in bytes should be in range [" +
+			strconv.Itoa(IVSizeItr(0)) + ", " +
+			strconv.Itoa(MaxIVSize) + "]: " +
+			GetKeySizesString(", "))
 	}
-	e.IVSizeBits = ivSizeBits
+	e.IVSize = uint32(ivSize)
 
 	var j int32
 	var i, t, x, k, s uint32
-	var initArray [(MaxKeySizeBits + MaxIVSizeBits) / 32]uint32
+	var initArray [(MaxKeySize + MaxIVSize) / 4]uint32
 
-	for _, v := range iv {
-		e.IV[i] = v
-	}
+	copy(e.IV[:], iv)
 
+	// Create randomish MT initialization vector from IV and Key bytes.
 	j = 0
-	t = e.KeySizeBits / 32
+	t = e.KeySize / 4
 	for i = 0; i < t; i++ {
 		x = uint32(e.Key[j])
 		j++
@@ -95,9 +135,9 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 		j++
 		initArray[i] = x
 	}
-	if e.KeySizeBits%32 != 0 {
+	if (e.KeySize*8)%32 != 0 {
 		x = 0
-		k = (e.KeySizeBits % 32) / 8
+		k = ((e.KeySize * 8) % 32) / 8
 		for i = 0; i < k; i++ {
 			x |= uint32(e.Key[j]) << (8 * k)
 			j++
@@ -107,7 +147,7 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 	}
 
 	j = 0
-	s = e.IVSizeBits / 32
+	s = e.IVSize / 4
 	for i = 0; i < s; i++ {
 		x = uint32(e.IV[j])
 		j++
@@ -119,9 +159,9 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 		j++
 		initArray[t+i] = x
 	}
-	if e.IVSizeBits%32 != 0 {
+	if (e.IVSize*8)%32 != 0 {
 		x = 0
-		k = (e.IVSizeBits % 32) / 8
+		k = ((e.IVSize * 8) % 32) / 8
 		for i = 0; i < k; i++ {
 			x |= uint32(e.IV[j]) << (8 * k)
 			j++
@@ -131,10 +171,6 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 	}
 	e.ctx = random.NewArraySeeded(initArray[:]) // Initialize MT
 
-	e.ctx.Accum = 1
-	for i = 0; i < 64; i++ { // warm up : idling 64 times
-		e.ctx.Accum *= (e.ctx.GenrandInt32() | 0x1)
-	}
 	return nil
 }
 
@@ -146,8 +182,7 @@ func (e *Ecrypt) EncryptBytes(
 
 	var i uint32
 	for i = 0; i < msglen; i++ {
-		e.ctx.Accum *= (e.ctx.GenrandInt32() | 0x1)
-		ciphertext[i] = plaintext[i] ^ uint8(e.ctx.Accum>>24)
+		ciphertext[i] = plaintext[i] ^ e.ctx.Next()
 	}
 }
 
@@ -159,8 +194,7 @@ func (e *Ecrypt) DecryptBytes(
 
 	var i uint32
 	for i = 0; i < msglen; i++ {
-		e.ctx.Accum *= (e.ctx.GenrandInt32() | 0x1)
-		plaintext[i] = ciphertext[i] ^ uint8(e.ctx.Accum>>24)
+		plaintext[i] = ciphertext[i] ^ e.ctx.Next()
 	}
 }
 
@@ -171,7 +205,6 @@ func (e *Ecrypt) KeystreamBytes(
 
 	var i uint32
 	for i = 0; i < msglen; i++ {
-		e.ctx.Accum *= (e.ctx.GenrandInt32() | 0x1)
-		keystream[i] = uint8(e.ctx.Accum >> 24)
+		keystream[i] = e.ctx.Next()
 	}
 }
