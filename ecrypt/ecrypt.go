@@ -85,6 +85,8 @@ func New() *Ecrypt {
 	return &Ecrypt{}
 }
 
+// Recommended : (key length + iv length) == random.N * 4 == 624 * 4 == 2496 bytes
+
 // KeySetup is just to capture first half of bytes needed for making MT initialization vector
 func (e *Ecrypt) KeySetup(key []byte) error {
 
@@ -123,7 +125,7 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 
 	// Create randomish MT initialization vector from IV and Key bytes.
 	j = 0
-	t = e.KeySize / 4
+	t = e.KeySize / 4 // t words from key
 	for i = 0; i < t; i++ {
 		x = uint32(e.Key[j])
 		j++
@@ -147,7 +149,7 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 	}
 
 	j = 0
-	s = e.IVSize / 4
+	s = e.IVSize / 4 // s words from IV
 	for i = 0; i < s; i++ {
 		x = uint32(e.IV[j])
 		j++
