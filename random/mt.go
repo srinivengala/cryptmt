@@ -1,5 +1,7 @@
 package random
 
+import "fmt"
+
 /* CryptMT Stream Cipher, Relying Mersenne Twister */
 /* By Hagita-Matsumoto-Nishimura-Saito */
 /* MT included */
@@ -43,7 +45,7 @@ func NewSeeded(s uint32) *Ctx {
 		/* 2002/01/09 modified by Makoto Matsumoto             */
 	}
 
-	c.warmup()
+	//c.warmup()
 	return c
 }
 
@@ -88,11 +90,13 @@ func NewArraySeeded(initKey []uint32) *Ctx {
 		}
 	}
 
-	c.warmup()
+	c.mt[0] = uint32(0x80000000) /* MSB is 1; assuring non-zero initial array */
+	//c.warmup()
 	return c
 }
 
-func (c *Ctx) warmup() {
+// Warmup idles 64 times
+func (c *Ctx) Warmup() {
 	c.accum = 1
 	c.mt[0] |= uint32(0x80000000) // MSB is 1; assuring non-zero initial array
 	c.mti = N + 1                 //// mti==N+1 means mt[N] needs Blending/Initializing
@@ -152,4 +156,13 @@ func (c *Ctx) NextWord() uint32 {
 func (c *Ctx) SecureNext() byte {
 	c.accum *= (c.NextWord() | 0x1)
 	return byte(c.accum >> 24)
+}
+
+// DumpContext to
+func (c *Ctx) DumpContext() { //TODEL
+	fmt.Print("MT[")
+	for _, v := range c.mt[:16] {
+		fmt.Printf("%2x ", v)
+	}
+	fmt.Println("]")
 }

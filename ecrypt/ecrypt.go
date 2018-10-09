@@ -175,7 +175,9 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 		s++
 	}
 	e.ctx = random.NewArraySeeded(initArray[:]) // Initialize MT
-	e.Accum = 1
+
+	//e.Accum = 1
+	e.ctx.Warmup()
 	return nil
 }
 

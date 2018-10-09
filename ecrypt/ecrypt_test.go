@@ -6,11 +6,26 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/srinivengala/cryptmt/random"
+
 	"github.com/srinivengala/cryptmt/util"
 )
 
 func TestEncryptDecrypt(t *testing.T) {
 	simpleTest()
+}
+
+func TestSeedingInt(t *testing.T) {
+	fmt.Println("MT[       1 6c078966 dd5254a5 b9523b81  3df95b3 ca37daa4 1a9da2e9 9cbef6f4 923b1516 532304ed 3ce73d26 7afe7609 4dc6d934 66240ef6 34fd1681 626be9f4 ]")
+	c := random.NewSeeded(1)
+	c.DumpContext()
+}
+
+func TestSeeding(t *testing.T) {
+	fmt.Println("MT[80000000 58a8fe4c df0469aa 5bafaa0e fb912ed6 1a77f7b5 63bfc56d 9d1a1d78 6a95ddaa ae832fc4 bab0fd73 15659e9d b2166f2e 5180cf0f fdbad23c 2ef218c6 ]")
+	arr := make([]uint32, 32)
+	c := random.NewArraySeeded(arr)
+	c.DumpContext()
 }
 
 func TestVector2(t *testing.T) {
@@ -32,6 +47,7 @@ func TestVector2(t *testing.T) {
 	if err := cipher.IVSetup(iv); err != nil {
 		t.Error(err)
 	}
+	cipher.ctx.DumpContext()
 	cipher.EncryptBytes(pt, ct, uint32(len(pt)))
 
 	output := hex.EncodeToString(ct)
