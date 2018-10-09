@@ -7,9 +7,9 @@ package random
 
 // Ctx is context
 type Ctx struct {
-	MT    [624]uint32
-	Mti   int
-	Accum uint32
+	mt    [624]uint32 // MT state
+	mti   int         // index into MT
+	accum uint32      // Accumulator
 }
 
 ///////////////////////////
@@ -34,20 +34,16 @@ const lowerMask uint32 = 0x7FFFFFFF // least significant r bits
 // NewSeeded initializes mt[N] with a seed
 func NewSeeded(s uint32) *Ctx {
 	c := new(Ctx)
-	c.MT[0] = s & uint32(0xFFFFFFFF)
-	for c.Mti = 1; c.Mti < N; c.Mti++ {
-		c.MT[c.Mti] = uint32(uint32(1812433253)*(c.MT[c.Mti-1]^(c.MT[c.Mti-1]>>30)) + uint32(c.Mti))
+	c.mt[0] = s & uint32(0xFFFFFFFF)
+	for c.mti = 1; c.mti < N; c.mti++ {
+		c.mt[c.mti] = uint32(uint32(1812433253)*(c.mt[c.mti-1]^(c.mt[c.mti-1]>>30)) + uint32(c.mti))
 		/* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
 		/* In the previous versions, MSBs of the seed affect   */
 		/* only MSBs of the array mt[].                        */
 		/* 2002/01/09 modified by Makoto Matsumoto             */
 	}
 
-	c.Mti = N + 1 //// mti==N+1 means mt[N] needs Blending/Initializing
-	c.Accum = 1
-	for i := 0; i < 64; i++ { // warm up : idling 64 times
-		c.Next()
-	}
+	c.warmup()
 	return c
 }
 
@@ -70,11 +66,11 @@ func NewArraySeeded(initKey []uint32) *Ctx {
 
 	for ; k > 0; k-- {
 		//non linear
-		c.MT[i] = uint32((c.MT[i] ^ ((c.MT[i-1] ^ (c.MT[i-1] >> 30)) * uint32(1664525))) + initKey[j] + uint32(j))
+		c.mt[i] = uint32((c.mt[i] ^ ((c.mt[i-1] ^ (c.mt[i-1] >> 30)) * uint32(1664525))) + initKey[j] + uint32(j))
 		i++
 		j++
 		if i >= N {
-			c.MT[0] = c.MT[N-1]
+			c.mt[0] = c.mt[N-1]
 			i = 1
 		}
 		if j >= keyLength {
@@ -84,21 +80,31 @@ func NewArraySeeded(initKey []uint32) *Ctx {
 
 	for k = N - 1; k > 0; k-- {
 		//non linear
-		c.MT[i] = uint32((c.MT[i] ^ ((c.MT[i-1] ^ (c.MT[i-1] >> 30)) * uint32(1566083941))) - uint32(i))
+		c.mt[i] = uint32((c.mt[i] ^ ((c.mt[i-1] ^ (c.mt[i-1] >> 30)) * uint32(1566083941))) - uint32(i))
 		i++
 		if i >= N {
-			c.MT[0] = c.MT[N-1]
+			c.mt[0] = c.mt[N-1]
 			i = 1
 		}
 	}
 
-	c.MT[0] = uint32(0x80000000) // MSB is 1; assuring non-zero initial array
-	c.Mti = N + 1                //// mti==N+1 means mt[N] needs Blending/Initializing
-	c.Accum = 1
-	for i = 0; i < 64; i++ { // warm up : idling 64 times
-		c.Next()
-	}
+	c.warmup()
 	return c
+}
+
+func (c *Ctx) warmup() {
+	c.accum = 1
+	c.mt[0] |= uint32(0x80000000) // MSB is 1; assuring non-zero initial array
+	c.mti = N + 1                 //// mti==N+1 means mt[N] needs Blending/Initializing
+	for i := 0; i < 64; i++ {     // warm up : idling 64 times
+		c.NextWord()
+	}
+}
+
+// Read reads up to len(p) bytes into p.
+// It returns the number of bytes read (0 <= n <= len(p)) and any error encountered.
+func Read(p []byte) (n int, err error) {
+	return 0, nil
 }
 
 var mag01 = [2]uint32{uint32(0x0), matrixA}
@@ -114,34 +120,36 @@ func (c *Ctx) BlendInternalState() {
 	var kk int
 
 	for kk = 0; kk < N-M; kk++ {
-		y = (c.MT[kk] & upperMask) | (c.MT[kk+1] & lowerMask)
-		c.MT[kk] = c.MT[kk+M] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
+		y = (c.mt[kk] & upperMask) | (c.mt[kk+1] & lowerMask)
+		c.mt[kk] = c.mt[kk+M] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
 	}
 	for ; kk < N-1; kk++ {
-		y = (c.MT[kk] & upperMask) | (c.MT[kk+1] & lowerMask)
-		c.MT[kk] = c.MT[kk+(M-N)] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
+		y = (c.mt[kk] & upperMask) | (c.mt[kk+1] & lowerMask)
+		c.mt[kk] = c.mt[kk+(M-N)] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
 	}
-	y = (c.MT[N-1] & upperMask) | (c.MT[0] & lowerMask)
-	c.MT[N-1] = c.MT[M-1] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
+	y = (c.mt[N-1] & upperMask) | (c.mt[0] & lowerMask)
+	c.mt[N-1] = c.mt[M-1] ^ (y >> 1) ^ mag01[y&uint32(0x1)]
 
-	c.Mti = 0
+	c.mti = 0
 	return
 }
 
 // NextWord to generate 32-bit random integer
-func (c *Ctx) nextWord() uint32 {
-	if c.Mti >= N {
+// NOTE: Either use only NextWord or only SecureNext not both
+func (c *Ctx) NextWord() uint32 {
+	if c.mti >= N {
 		c.BlendInternalState()
 	}
 
 	//no tampering
-	ret := c.MT[c.Mti]
-	c.Mti++
+	ret := c.mt[c.mti]
+	c.mti++
 	return ret
 }
 
-// Next generates next random byte
-func (c *Ctx) Next() byte {
-	c.Accum *= (c.nextWord() | 0x1)
-	return byte(c.Accum >> 24)
+// SecureNext generates secure next random byte
+// NOTE: Either use only NextWord or only SecureNext not both
+func (c *Ctx) SecureNext() byte {
+	c.accum *= (c.NextWord() | 0x1)
+	return byte(c.accum >> 24)
 }

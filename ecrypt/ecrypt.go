@@ -71,8 +71,9 @@ type Ecrypt struct {
 	ctx     *random.Ctx
 	KeySize uint32 // size in bytes
 	IVSize  uint32 // size in bytes
-	Key     [MaxKeySize]byte
-	IV      [MaxIVSize]byte
+	Key     []byte
+	IV      []byte
+	Accum   uint32 // Accumulator
 }
 
 /* This is a stream cipher. The algorithm is as follows. */
@@ -101,7 +102,8 @@ func (e *Ecrypt) KeySetup(key []byte) error {
 
 	e.KeySize = uint32(keySize)
 
-	copy(e.Key[:], key)
+	e.Key = make([]byte, keySize)
+	copy(e.Key, key)
 
 	return nil
 }
@@ -117,11 +119,12 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 	}
 	e.IVSize = uint32(ivSize)
 
+	e.IV = make([]byte, ivSize)
+	copy(e.IV, iv) //copy works because e.IV memory is preallocated
+
 	var j int32
 	var i, t, x, k, s uint32
 	var initArray [(MaxKeySize + MaxIVSize) / 4]uint32
-
-	copy(e.IV[:], iv)
 
 	// Create randomish MT initialization vector from IV and Key bytes.
 	j = 0
@@ -172,7 +175,7 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 		s++
 	}
 	e.ctx = random.NewArraySeeded(initArray[:]) // Initialize MT
-
+	e.Accum = 1
 	return nil
 }
 
@@ -184,7 +187,7 @@ func (e *Ecrypt) EncryptBytes(
 
 	var i uint32
 	for i = 0; i < msglen; i++ {
-		ciphertext[i] = plaintext[i] ^ e.ctx.Next()
+		ciphertext[i] = plaintext[i] ^ e.next()
 	}
 }
 
@@ -196,7 +199,7 @@ func (e *Ecrypt) DecryptBytes(
 
 	var i uint32
 	for i = 0; i < msglen; i++ {
-		plaintext[i] = ciphertext[i] ^ e.ctx.Next()
+		plaintext[i] = ciphertext[i] ^ e.next()
 	}
 }
 
@@ -207,6 +210,13 @@ func (e *Ecrypt) KeystreamBytes(
 
 	var i uint32
 	for i = 0; i < msglen; i++ {
-		keystream[i] = e.ctx.Next()
+		keystream[i] = e.next()
 	}
+}
+
+// Next generates next random byte
+func (e *Ecrypt) next() byte {
+	//e.Accum *= (e.ctx.NextWord() | 0x1)
+	//return byte(e.Accum >> 24)
+	return e.ctx.SecureNext()
 }

@@ -2,6 +2,7 @@ package ecrypt
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -10,6 +11,67 @@ import (
 
 func TestEncryptDecrypt(t *testing.T) {
 	simpleTest()
+}
+
+func TestVector2(t *testing.T) {
+	//keyStr := "1234567812345678"
+	//ivStr := "8765432187654321"
+	stream := "77f199321d042a400d33bb936db719d2"
+
+	pt := make([]byte, 128)
+	key := []byte{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}
+	iv := []byte{8, 7, 6, 5, 4, 3, 2, 1, 8, 7, 6, 5, 4, 3, 2, 1}
+
+	ct := make([]byte, len(pt))
+
+	cipher := New()
+	if err := cipher.KeySetup(key); err != nil {
+		t.Error(err)
+		return
+	}
+	if err := cipher.IVSetup(iv); err != nil {
+		t.Error(err)
+	}
+	cipher.EncryptBytes(pt, ct, uint32(len(pt)))
+
+	output := hex.EncodeToString(ct)
+
+	t.Log(stream)
+	t.Log(output[:len(stream)])
+
+	if stream == output[:len(stream)] {
+		t.Logf("success")
+	} else {
+		t.Fail()
+	}
+}
+
+func TestVector(t *testing.T) {
+	keyStr := "80000000000000000000000000000000"
+	ivStr := "00000000000000000000000000000000"
+	stream := "9F80406781E5996319BDF9DFD5629D30"
+
+	pt := make([]byte, 512)
+	key, _ := hex.DecodeString(keyStr)
+	iv, _ := hex.DecodeString(ivStr)
+
+	ct := make([]byte, len(pt))
+
+	cipher := New()
+	cipher.KeySetup(key)
+	cipher.IVSetup(iv)
+	cipher.EncryptBytes(pt, ct, uint32(len(pt)))
+
+	output := hex.EncodeToString(ct)
+
+	t.Log(stream)
+	t.Log(output[:len(stream)])
+
+	if stream == output[:len(stream)] {
+		t.Logf("success")
+	} else {
+		t.Fail()
+	}
 }
 
 func TestEcrypt(t *testing.T) {
