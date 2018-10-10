@@ -7,30 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/srinivengala/cryptmt/random"
-
 	"github.com/srinivengala/cryptmt/util"
 )
-
-func TestSeedingInt(t *testing.T) {
-	expect := "MT[ 1 6c078966 dd5254a5 b9523b81 3df95b3 ca37daa4 1a9da2e9 9cbef6f4 923b1516 532304ed 3ce73d26 7afe7609 4dc6d934 66240ef6 34fd1681 626be9f4 ]"
-	c := random.NewSeeded(1)
-	result := c.DumpContext()
-
-	if expect != result {
-		t.Error("\n", expect, "\n", result)
-	}
-}
-
-func TestSeeding(t *testing.T) {
-	expect := "MT[80000000 58a8fe4c df0469aa 5bafaa0e fb912ed6 1a77f7b5 63bfc56d 9d1a1d78 6a95ddaa ae832fc4 bab0fd73 15659e9d b2166f2e 5180cf0f fdbad23c 2ef218c6 ]"
-	arr := make([]uint32, 32)
-	c := random.NewArraySeeded(arr)
-	result := c.DumpContext()
-	if expect != result {
-		t.Error("\n", expect, "\n", result)
-	}
-}
 
 func TestVector2(t *testing.T) {
 	keyStr := "1234567812345678"
@@ -51,7 +29,6 @@ func TestVector2(t *testing.T) {
 	if err := cipher.IVSetup(iv); err != nil {
 		t.Error(err)
 	}
-	cipher.ctx.DumpContext()
 	cipher.EncryptBytes(pt, ct, uint32(len(pt)))
 
 	output := hex.EncodeToString(ct)
@@ -161,7 +138,7 @@ func simpleTest() {
 	ecrypt := New()
 	ecrypt.KeySetup([]byte("1234567812345678"))
 	ecrypt.IVSetup([]byte("8765432187654321"))
-	ecrypt.ctx.DumpContext()
+
 	ecrypt.EncryptBytes(plaintext[:], ciphertext[:], 128)
 	for i = 0; i < 16; i++ {
 		fmt.Printf("%2x ", ciphertext[i])

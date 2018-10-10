@@ -1,7 +1,5 @@
 package random
 
-import "fmt"
-
 /* CryptMT Stream Cipher, Relying Mersenne Twister */
 /* By Hagita-Matsumoto-Nishimura-Saito */
 /* MT included */
@@ -160,11 +158,11 @@ func (c *Ctx) SecureNext() byte {
 }
 
 // DumpContext to
-func (c *Ctx) DumpContext() string { //TODEL
-	s := "MT["
-	for _, v := range c.mt[:16] {
-		s = s + fmt.Sprintf("%2x ", v)
-	}
-	s = s + "]"
-	return s
-}
+// func (c *Ctx) DumpContext() string { //TODEL
+// 	s := "MT["
+// 	for _, v := range c.mt[:16] {
+// 		s = s + fmt.Sprintf("%8x ", v)
+// 	}
+// 	s = s + "]"
+// 	return s
+// }
