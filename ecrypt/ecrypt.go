@@ -73,7 +73,7 @@ type Ecrypt struct {
 	IVSize  uint32 // size in bytes
 	Key     []byte
 	IV      []byte
-	Accum   uint32 // Accumulator
+	//Accum   uint32 // Accumulator
 }
 
 /* This is a stream cipher. The algorithm is as follows. */
@@ -90,7 +90,6 @@ func New() *Ecrypt {
 
 // KeySetup is just to capture first half of bytes needed for making MT initialization vector
 func (e *Ecrypt) KeySetup(key []byte) error {
-
 	keySize := len(key)
 
 	if !IsValidKeySize(keySize) {
@@ -174,7 +173,8 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 		initArray[t+s] = x
 		s++
 	}
-	e.ctx = random.NewArraySeeded(initArray[:]) // Initialize MT
+
+	e.ctx = random.NewArraySeeded(initArray[:t+s]) // Initialize MT
 
 	//e.Accum = 1
 	e.ctx.Warmup()

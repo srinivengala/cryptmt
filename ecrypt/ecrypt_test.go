@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/srinivengala/cryptmt/random"
@@ -11,31 +12,34 @@ import (
 	"github.com/srinivengala/cryptmt/util"
 )
 
-func TestEncryptDecrypt(t *testing.T) {
-	simpleTest()
-}
-
 func TestSeedingInt(t *testing.T) {
-	fmt.Println("MT[       1 6c078966 dd5254a5 b9523b81  3df95b3 ca37daa4 1a9da2e9 9cbef6f4 923b1516 532304ed 3ce73d26 7afe7609 4dc6d934 66240ef6 34fd1681 626be9f4 ]")
+	expect := "MT[ 1 6c078966 dd5254a5 b9523b81 3df95b3 ca37daa4 1a9da2e9 9cbef6f4 923b1516 532304ed 3ce73d26 7afe7609 4dc6d934 66240ef6 34fd1681 626be9f4 ]"
 	c := random.NewSeeded(1)
-	c.DumpContext()
+	result := c.DumpContext()
+
+	if expect != result {
+		t.Error("\n", expect, "\n", result)
+	}
 }
 
 func TestSeeding(t *testing.T) {
-	fmt.Println("MT[80000000 58a8fe4c df0469aa 5bafaa0e fb912ed6 1a77f7b5 63bfc56d 9d1a1d78 6a95ddaa ae832fc4 bab0fd73 15659e9d b2166f2e 5180cf0f fdbad23c 2ef218c6 ]")
+	expect := "MT[80000000 58a8fe4c df0469aa 5bafaa0e fb912ed6 1a77f7b5 63bfc56d 9d1a1d78 6a95ddaa ae832fc4 bab0fd73 15659e9d b2166f2e 5180cf0f fdbad23c 2ef218c6 ]"
 	arr := make([]uint32, 32)
 	c := random.NewArraySeeded(arr)
-	c.DumpContext()
+	result := c.DumpContext()
+	if expect != result {
+		t.Error("\n", expect, "\n", result)
+	}
 }
 
 func TestVector2(t *testing.T) {
-	//keyStr := "1234567812345678"
-	//ivStr := "8765432187654321"
+	keyStr := "1234567812345678"
+	ivStr := "8765432187654321"
 	stream := "77f199321d042a400d33bb936db719d2"
 
 	pt := make([]byte, 128)
-	key := []byte{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}
-	iv := []byte{8, 7, 6, 5, 4, 3, 2, 1, 8, 7, 6, 5, 4, 3, 2, 1}
+	key := []byte(keyStr)
+	iv := []byte(ivStr)
 
 	ct := make([]byte, len(pt))
 
@@ -79,6 +83,7 @@ func TestVector(t *testing.T) {
 	cipher.EncryptBytes(pt, ct, uint32(len(pt)))
 
 	output := hex.EncodeToString(ct)
+	output = strings.ToUpper(output)
 
 	t.Log(stream)
 	t.Log(output[:len(stream)])
@@ -140,7 +145,38 @@ func simpleTestKeysize(textSize int, keySize int, ivSize int) {
 	util.Display(plaintext2, ciphertext)
 }
 
+func TestEncryptDecrypt(t *testing.T) {
+	simpleTest()
+}
 func simpleTest() {
+	var i int
+	var plaintext [128]byte
+	var plaintext2 [128]byte
+	var ciphertext [128]byte
+
+	for i = 0; i < 128; i++ {
+		plaintext[i] = 0
+	}
+
+	ecrypt := New()
+	ecrypt.KeySetup([]byte("1234567812345678"))
+	ecrypt.IVSetup([]byte("8765432187654321"))
+	ecrypt.ctx.DumpContext()
+	ecrypt.EncryptBytes(plaintext[:], ciphertext[:], 128)
+	for i = 0; i < 16; i++ {
+		fmt.Printf("%2x ", ciphertext[i])
+	}
+	fmt.Printf("\n")
+
+	ecrypt.IVSetup([]byte("8765432187654321"))
+	ecrypt.DecryptBytes(ciphertext[:], plaintext2[:], 128)
+	for i = 0; i < 16; i++ {
+		fmt.Printf("%2x ", plaintext2[i])
+	}
+	fmt.Printf("\n")
+}
+
+func simpleTestBackup() {
 	var i int
 	var plaintext [128]byte
 	var plaintext2 [128]byte

@@ -68,7 +68,8 @@ func NewArraySeeded(initKey []uint32) *Ctx {
 
 	for ; k > 0; k-- {
 		//non linear
-		c.mt[i] = uint32((c.mt[i] ^ ((c.mt[i-1] ^ (c.mt[i-1] >> 30)) * uint32(1664525))) + initKey[j] + uint32(j))
+		c.mt[i] = (c.mt[i] ^ ((c.mt[i-1] ^ (c.mt[i-1] >> 30)) * uint32(1664525))) +
+			initKey[j] + uint32(j)
 		i++
 		j++
 		if i >= N {
@@ -82,7 +83,8 @@ func NewArraySeeded(initKey []uint32) *Ctx {
 
 	for k = N - 1; k > 0; k-- {
 		//non linear
-		c.mt[i] = uint32((c.mt[i] ^ ((c.mt[i-1] ^ (c.mt[i-1] >> 30)) * uint32(1566083941))) - uint32(i))
+		c.mt[i] = (c.mt[i] ^ ((c.mt[i-1] ^ (c.mt[i-1] >> 30)) * uint32(1566083941))) -
+			uint32(i)
 		i++
 		if i >= N {
 			c.mt[0] = c.mt[N-1]
@@ -90,8 +92,7 @@ func NewArraySeeded(initKey []uint32) *Ctx {
 		}
 	}
 
-	c.mt[0] = uint32(0x80000000) /* MSB is 1; assuring non-zero initial array */
-	//c.warmup()
+	c.mt[0] = uint32(0x80000000) // MSB is 1; assuring non-zero initial array
 	return c
 }
 
@@ -99,9 +100,9 @@ func NewArraySeeded(initKey []uint32) *Ctx {
 func (c *Ctx) Warmup() {
 	c.accum = 1
 	c.mt[0] |= uint32(0x80000000) // MSB is 1; assuring non-zero initial array
-	c.mti = N + 1                 //// mti==N+1 means mt[N] needs Blending/Initializing
+	c.mti = N + 1                 // mti==N+1 means mt[N] needs Blending/Initializing
 	for i := 0; i < 64; i++ {     // warm up : idling 64 times
-		c.NextWord()
+		c.SecureNext() // calling Secure version to account for accumulator Accum
 	}
 }
 
@@ -159,10 +160,11 @@ func (c *Ctx) SecureNext() byte {
 }
 
 // DumpContext to
-func (c *Ctx) DumpContext() { //TODEL
-	fmt.Print("MT[")
+func (c *Ctx) DumpContext() string { //TODEL
+	s := "MT["
 	for _, v := range c.mt[:16] {
-		fmt.Printf("%2x ", v)
+		s = s + fmt.Sprintf("%2x ", v)
 	}
-	fmt.Println("]")
+	s = s + "]"
+	return s
 }
