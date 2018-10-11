@@ -156,13 +156,3 @@ func (c *Ctx) SecureNext() byte {
 	c.accum *= (c.NextWord() | 0x1)
 	return byte(c.accum >> 24)
 }
-
-// DumpContext to
-// func (c *Ctx) DumpContext() string { //TODEL
-// 	s := "MT["
-// 	for _, v := range c.mt[:16] {
-// 		s = s + fmt.Sprintf("%8x ", v)
-// 	}
-// 	s = s + "]"
-// 	return s
-// }

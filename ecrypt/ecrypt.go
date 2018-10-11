@@ -181,7 +181,7 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 	return nil
 }
 
-// EncryptBytes blah
+// EncryptBytes encrypts msglen bytes from plaintext to ciphertext
 func (e *Ecrypt) EncryptBytes(
 	plaintext []byte,
 	ciphertext []byte,
@@ -193,11 +193,11 @@ func (e *Ecrypt) EncryptBytes(
 	}
 }
 
-// DecryptBytes blah
+// DecryptBytes decrypts msglen bytes from ciphertext to plaintext
 func (e *Ecrypt) DecryptBytes(
 	ciphertext []byte,
 	plaintext []byte,
-	msglen uint32) { /* Message length in bytes. */
+	msglen uint32) { // Message length in bytes.
 
 	var i uint32
 	for i = 0; i < msglen; i++ {
@@ -205,10 +205,10 @@ func (e *Ecrypt) DecryptBytes(
 	}
 }
 
-// KeystreamBytes blah
+// KeystreamBytes returns msglen bytes of keystream pseudo random numbers
 func (e *Ecrypt) KeystreamBytes(
 	keystream []byte,
-	msglen uint32) {
+	msglen uint32) { // Message length in bytes
 
 	var i uint32
 	for i = 0; i < msglen; i++ {
@@ -216,7 +216,7 @@ func (e *Ecrypt) KeystreamBytes(
 	}
 }
 
-// Next generates next random byte
+// Next generates next keystream random byte
 func (e *Ecrypt) next() byte {
 	//e.Accum *= (e.ctx.NextWord() | 0x1)
 	//return byte(e.Accum >> 24)

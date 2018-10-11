@@ -11,13 +11,11 @@ import (
 )
 
 func TestVector2(t *testing.T) {
-	keyStr := "1234567812345678"
-	ivStr := "8765432187654321"
 	stream := "77f199321d042a400d33bb936db719d2"
 
 	pt := make([]byte, 128)
-	key := []byte(keyStr)
-	iv := []byte(ivStr)
+	key := []byte("1234567812345678")
+	iv := []byte("8765432187654321")
 
 	ct := make([]byte, len(pt))
 
@@ -98,8 +96,6 @@ func simpleTestKeysize(textSize int, keySize int, ivSize int) {
 		plaintext[i] = 0
 	}
 
-	//key := bytes.Repeat([]byte("12345678"), keySize/16)
-	//iv := bytes.Repeat([]byte("87654321"), ivSize/16)
 	key := make([]byte, keySize)
 	iv := make([]byte, ivSize)
 	rand.Read(key)
@@ -115,7 +111,6 @@ func simpleTestKeysize(textSize int, keySize int, ivSize int) {
 	}
 	ecrypt.EncryptBytes(plaintext[:], ciphertext[:], uint32(textSize))
 
-	//iv = bytes.Repeat([]byte("87654321"), ivSize/16)
 	ecrypt.IVSetup(iv)
 	ecrypt.DecryptBytes(ciphertext[:], plaintext2[:], uint32(textSize))
 
@@ -123,9 +118,6 @@ func simpleTestKeysize(textSize int, keySize int, ivSize int) {
 }
 
 func TestEncryptDecrypt(t *testing.T) {
-	simpleTest()
-}
-func simpleTest() {
 	var i int
 	var plaintext [128]byte
 	var plaintext2 [128]byte
@@ -139,33 +131,6 @@ func simpleTest() {
 	ecrypt.KeySetup([]byte("1234567812345678"))
 	ecrypt.IVSetup([]byte("8765432187654321"))
 
-	ecrypt.EncryptBytes(plaintext[:], ciphertext[:], 128)
-	for i = 0; i < 16; i++ {
-		fmt.Printf("%2x ", ciphertext[i])
-	}
-	fmt.Printf("\n")
-
-	ecrypt.IVSetup([]byte("8765432187654321"))
-	ecrypt.DecryptBytes(ciphertext[:], plaintext2[:], 128)
-	for i = 0; i < 16; i++ {
-		fmt.Printf("%2x ", plaintext2[i])
-	}
-	fmt.Printf("\n")
-}
-
-func simpleTestBackup() {
-	var i int
-	var plaintext [128]byte
-	var plaintext2 [128]byte
-	var ciphertext [128]byte
-
-	for i = 0; i < 128; i++ {
-		plaintext[i] = 0
-	}
-
-	ecrypt := New()
-	ecrypt.KeySetup([]byte("1234567812345678"))
-	ecrypt.IVSetup([]byte("8765432187654321"))
 	ecrypt.EncryptBytes(plaintext[:], ciphertext[:], 128)
 	for i = 0; i < 16; i++ {
 		fmt.Printf("%2x ", ciphertext[i])
