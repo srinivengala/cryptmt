@@ -69,9 +69,9 @@ func IsValidIVSize(size int) bool {
 // Ecrypt Implementation
 type Ecrypt struct {
 	ctx     *random.Ctx
-	KeySize uint32 // size in bytes
-	IVSize  uint32 // size in bytes
-	Key     []byte
+	keySize uint32 // size in bytes
+	ivSize  uint32 // size in bytes
+	key     []byte
 	IV      []byte
 	//Accum   uint32 // Accumulator
 }
@@ -99,10 +99,10 @@ func (e *Ecrypt) KeySetup(key []byte) error {
 			GetKeySizesString(", "))
 	}
 
-	e.KeySize = uint32(keySize)
+	e.keySize = uint32(keySize)
 
-	e.Key = make([]byte, keySize)
-	copy(e.Key, key)
+	e.key = make([]byte, keySize)
+	copy(e.key, key)
 
 	return nil
 }
@@ -116,7 +116,7 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 			strconv.Itoa(MaxIVSize) + "]: " +
 			GetKeySizesString(", "))
 	}
-	e.IVSize = uint32(ivSize)
+	e.ivSize = uint32(ivSize)
 
 	e.IV = make([]byte, ivSize)
 	copy(e.IV, iv) //copy works because e.IV memory is preallocated
@@ -127,23 +127,23 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 
 	// Create randomish MT initialization vector from IV and Key bytes.
 	j = 0
-	t = e.KeySize / 4 // t words from key
+	t = e.keySize / 4 // t words from key
 	for i = 0; i < t; i++ {
-		x = uint32(e.Key[j])
+		x = uint32(e.key[j])
 		j++
-		x |= uint32(e.Key[j]) << 8
+		x |= uint32(e.key[j]) << 8
 		j++
-		x |= uint32(e.Key[j]) << 16
+		x |= uint32(e.key[j]) << 16
 		j++
-		x |= uint32(e.Key[j]) << 24
+		x |= uint32(e.key[j]) << 24
 		j++
 		initArray[i] = x
 	}
-	if (e.KeySize*8)%32 != 0 {
+	if (e.keySize*8)%32 != 0 {
 		x = 0
-		k = ((e.KeySize * 8) % 32) / 8
+		k = ((e.keySize * 8) % 32) / 8
 		for i = 0; i < k; i++ {
-			x |= uint32(e.Key[j]) << (8 * k)
+			x |= uint32(e.key[j]) << (8 * k)
 			j++
 		}
 		initArray[t] = x
@@ -151,7 +151,7 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 	}
 
 	j = 0
-	s = e.IVSize / 4 // s words from IV
+	s = e.ivSize / 4 // s words from IV
 	for i = 0; i < s; i++ {
 		x = uint32(e.IV[j])
 		j++
@@ -163,9 +163,9 @@ func (e *Ecrypt) IVSetup(iv []byte) error {
 		j++
 		initArray[t+i] = x
 	}
-	if (e.IVSize*8)%32 != 0 {
+	if (e.ivSize*8)%32 != 0 {
 		x = 0
-		k = ((e.IVSize * 8) % 32) / 8
+		k = ((e.ivSize * 8) % 32) / 8
 		for i = 0; i < k; i++ {
 			x |= uint32(e.IV[j]) << (8 * k)
 			j++
